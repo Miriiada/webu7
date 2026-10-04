@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build-server/
+.env
+.env.*
+!.env.example
+private/
+*.log
+coverage/
+work/
+outputs/
+shared/
+deploy-keys/
+releases/
+*.zip
+*.tar.gz
+*.sqlite*

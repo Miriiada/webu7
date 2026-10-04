@@ -1,0 +1,9 @@
+node_modules
+dist
+build-server
+.git
+.env
+.env.*
+private
+*.zip
+*.log

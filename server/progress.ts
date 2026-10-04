@@ -1,0 +1,70 @@
+import type { Catalog } from './content.js';
+import type { BotMessage } from './telegram.js';
+
+const clean = (s: string) => s.normalize('NFKC').replace(/\\([_*\[\]()~`>#+\-=|{}.!])/g, '$1').replace(/[*`]/g, '').replace(/\s+/g, ' ').trim();
+export function parseStep(message: Pick<BotMessage, 'text'>, catalog: Catalog) {
+  const text = message.text;
+  const stream = text.match(/Поток:\s*([^\n]+)/)?.[1];
+  const project = text.match(/Проект:\s*([^\n]+)/)?.[1];
+  const lessonTitle = text.match(/Урок:\s*«([^\n]+)»/)?.[1];
+  const step = text.match(/Шаг\s+(\d+)\s+из\s+(\d+):\s*([^\n]+)/);
+  const count = text.match(/📊[^\n]*?\b(\d+)\s*\/\s*(\d+)/);
+  if (!stream || !project || !lessonTitle || !step) return null;
+  const index = Number(step[1]) - 1, total = Number(step[2]);
+  const candidates = catalog.lessons.filter(l => {
+    const module = catalog.modules.find(m => m.id === l.moduleId);
+    return clean(l.title) === clean(lessonTitle) && l.stepIds.length === total && index >= 0 && index < total
+      && module && (clean(stream) === clean(module.title) || clean(stream).startsWith(clean(module.title) + ' -'))
+      && module.projects?.some(p => clean(p.title) === clean(project) && p.lessonIds.includes(l.id))
+      && clean(catalog.steps.find(s => s.id === l.stepIds[index])?.title || '') === clean(step[3]);
+  });
+  if (candidates.length !== 1) return null;
+  const lesson = candidates[0];
+  return { lesson, stepId: lesson.stepIds[index], index, stream: clean(stream), project: clean(project),
+    completed: count && Number(count[2]) === total && Number(count[1]) === total ? [...lesson.stepIds] : count && Number(count[2]) === total && Number(count[1]) === index ? lesson.stepIds.slice(0, index) : [] };
+}
+
+export function isCompleteButton(text: string) { return /^✅\s*Выполнено\s*$/.test(text); }
+export function transitionCompletes(text: string, previous: NonNullable<ReturnType<typeof parseStep>>) {
+  const title = text.match(/Урок\s*«([^\n]+)»\s*заверш[её]н/)?.[1];
+  const project = text.match(/Проект\s*«([^»]+)»\s*заверш[её]н/)?.[1];
+  return previous.index === previous.lesson.stepIds.length - 1 && ((!!title && clean(title) === clean(previous.lesson.title)) || (!!project && clean(project) === previous.project) || /Поток полностью заверш[её]н/.test(text));
+}
+export function completionEvidence(messages: BotMessage[], catalog: Catalog) {
+  const completed = new Map<string, number>();
+  let previous: ReturnType<typeof parseStep> = null;
+  for (const m of [...messages].sort((a, b) => a.id - b.id)) {
+    const reportStream = m.text.match(/📊\s*Мой прогресс\s*[—–-]\s*([^\n]+)/)?.[1];
+    if (reportStream) {
+      const module = catalog.modules.find(x => clean(reportStream) === clean(x.title) || clean(reportStream).startsWith(clean(x.title) + ' -'));
+      let project: NonNullable<Catalog['modules'][number]['projects']>[number] | undefined;
+      for (const line of m.text.split('\n')) {
+        const heading = line.match(/Проект\s+\d+:\s*(.+?)\s*[—–]\s*\[/);
+        if (heading) { project = module?.projects?.find(p => clean(p.title) === clean(heading[1])); continue; }
+        const row = line.match(/^\s*✅\s*(.+?)\s*[—–]\s*\[[^\]]*\]\s*(\d+)\/(\d+)\s*$/);
+        if (!row || !project || Number(row[2]) !== Number(row[3])) continue;
+        const matches = catalog.lessons.filter(l => project!.lessonIds.includes(l.id) && clean(l.title) === clean(row[1]) && l.stepIds.length === Number(row[3]));
+        if (matches.length === 1) for (const id of matches[0].stepIds) completed.set(id, m.id);
+      }
+    }
+    const parsed = parseStep(m, catalog);
+    if (parsed) {
+      for (const id of parsed.completed) completed.set(id, m.id);
+      previous = parsed;
+    } else if (previous && transitionCompletes(m.text, previous)) {
+      for (const id of previous.lesson.stepIds) completed.set(id, m.id);
+    }
+  }
+  return completed;
+}
+
+export interface LearningProgress {
+  catalog?: Catalog;
+  completedStepIds: string[];
+  completedLessonIds: string[];
+  modules: { id: string; completed: number; total: number }[];
+  current: { lessonId: string; stepId: string; title: string; stream: string; ticket?: string } | null;
+  historyComplete: boolean;
+  syncedAt: number;
+  notice: string;
+}

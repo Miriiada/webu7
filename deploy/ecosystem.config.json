@@ -1,0 +1,27 @@
+{
+  "apps": [{
+    "name": "u7-web",
+    "script": "/srv/web-u7-school/current/build-server/server/index.js",
+    "cwd": "/srv/web-u7-school/current",
+    "interpreter": "/usr/bin/node",
+    "exec_mode": "fork",
+    "instances": 1,
+    "watch": false,
+    "autorestart": true,
+    "restart_delay": 5000,
+    "kill_timeout": 30000,
+    "out_file": "/srv/web-u7-school/shared/logs/u7-web-out.log",
+    "error_file": "/srv/web-u7-school/shared/logs/u7-web-error.log",
+    "time": true,
+    "env": {
+      "NODE_ENV": "production",
+      "HOST": "127.0.0.1",
+      "PORT": "4173",
+      "APP_ORIGIN": "https://u7-hub.kz",
+      "APP_BASE_PATH": "/web/",
+      "TRUST_PROXY": "loopback",
+      "DATABASE_PATH": "/srv/web-u7-school/shared/private/astra.sqlite",
+      "DOTENV_CONFIG_PATH": "/srv/web-u7-school/shared/.env"
+    }
+  }]
+}

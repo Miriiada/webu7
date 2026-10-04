@@ -1,0 +1,3 @@
+import { readFileSync } from 'node:fs';
+export interface Catalog { revision: string; syncedAt: string; source: string; courses: { id: string; title: string; description: string; moduleIds: string[] }[]; modules: { id: string; title: string; description: string; lessonIds: string[]; projects?: { id: string; title: string; status?: string; lessonIds: string[] }[] }[]; lessons: { id: string; moduleId: string; title: string; minutes: number; stepIds: string[] }[]; steps: { id: string; title: string; content: string; code: string; kind: string; accessible?: boolean }[]; }
+export function readCatalog(): Catalog { return JSON.parse(readFileSync('data/catalog.json', 'utf8')); }

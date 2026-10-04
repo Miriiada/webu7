@@ -1,0 +1,30 @@
+[Unit]
+Description=U7 School web
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=u7-web
+Group=u7-web
+WorkingDirectory=/srv/web-u7-school/current
+EnvironmentFile=/srv/web-u7-school/shared/.env
+ExecStart=/usr/bin/node build-server/server/index.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+CapabilityBoundingSet=
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+InaccessiblePaths=-/srv/u7-hub -/srv/u7-school -/srv/web-legal -/srv/web-u7-school/deploy-keys -/srv/web-u7-school/repo
+ReadWritePaths=/srv/web-u7-school/shared/private
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
