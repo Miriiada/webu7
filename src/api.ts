@@ -1,4 +1,4 @@
-export interface User { id: string; name: string; email: string; telegramConnected: boolean; telegramName: string | null; created: number; }
+export interface User { id: string; name: string; email: string; role: 'student' | 'admin'; telegramConnected: boolean; telegramName: string | null; created: number; }
 export interface BotMessage { id: number; text: string; date: number; buttons: { id?: string; text: string; url?: string; disabled?: boolean }[][]; }
 export type { Catalog } from '../server/content';
 let csrf = '';

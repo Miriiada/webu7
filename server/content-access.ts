@@ -3,7 +3,8 @@ import type { LearningProgress } from './progress.js';
 import { moduleLessons } from './catalog-order.js';
 
 // Titles remain public. Bodies are only included in the user's verified response.
-export function accessibleCatalog(catalog: Catalog, progress?: LearningProgress): Catalog {
+export function accessibleCatalog(catalog: Catalog, progress?: LearningProgress, administrator = false): Catalog {
+  if (administrator) return { ...catalog, steps: catalog.steps.map(step => ({ ...step, accessible: true })) };
   const allowed = new Set(progress?.completedLessonIds || []);
   const current = catalog.lessons.find(l => l.id === progress?.current?.lessonId);
   if (current) {

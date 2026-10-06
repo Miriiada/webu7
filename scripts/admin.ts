@@ -4,6 +4,7 @@ import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import { loadConfig } from '../server/config.js';
 import { Store } from '../server/db.js';
+import { setUserRole } from '../server/roles.js';
 const command = process.argv[2];
 if (command === 'setup') {
   if (!existsSync('.env')) {
@@ -12,6 +13,16 @@ if (command === 'setup') {
     console.log('Создан .env с новым ключом. Ключ не выводится и не передаётся в браузер.');
   } else console.log('.env уже существует; ключ сохранён.');
   console.log('Заполните TELEGRAM_API_ID и TELEGRAM_API_HASH в .env, затем запустите сайт и создайте кабинет.');
+} else if (command === 'set-role') {
+  const email = process.argv[3]?.trim().toLowerCase(), role = process.argv[4];
+  if (!email || !['admin', 'student'].includes(role)) throw new Error('Использование: set-role email admin|student');
+  const config = loadConfig(), store = new Store(config.dbPath);
+  try {
+    const user = store.email(email);
+    if (!user) throw new Error('Пользователь не найден. Сначала создайте кабинет.');
+    setUserRole(store, user.id, role as 'admin' | 'student');
+    console.log(`Роль обновлена: ${role}. Обновите страницу кабинета.`);
+  } finally { store.close(); }
 } else if (command === 'forget-telegram') {
   const config = loadConfig(), store = new Store(config.dbPath), rl = createInterface({ input: stdin, output: stdout });
   const email = (await rl.question('Почта пользователя: ')).trim().toLowerCase(), user = store.email(email);
@@ -24,4 +35,4 @@ if (command === 'setup') {
     console.log('Сброс выполнен. Перезапустите сервис, чтобы закрыть соединения в памяти. При сбросе Telegram отдельно завершите сессию U7 Astra в Telegram → Настройки → Устройства.');
   }
   rl.close(); store.close();
-} else throw new Error('Команды: setup, forget-telegram');
+} else throw new Error('Команды: setup, set-role, forget-telegram');

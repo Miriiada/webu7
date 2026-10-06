@@ -11,13 +11,14 @@ import { TelegramBridge } from './telegram.js';
 import { readCatalog } from './content.js';
 import { accessibleCatalog } from './content-access.js';
 import { SESSION_TTL_MS } from './session-policy.js';
+import { setUserRole } from './roles.js';
 interface Auth { user: UserRow; session: string; csrf: string; }
 declare global { namespace Express { interface Request { auth?: Auth; } } }
 const passwordSchema = z.string().min(12).max(128);
 const emailSchema = z.email().max(254).transform(s => s.toLowerCase());
 const credentials = z.object({ email: emailSchema, password: z.string().min(1).max(128) }).strict();
 const recentSchema = z.object({ password: z.string().min(1).max(128) });
-const publicUser = (u: UserRow) => ({ id: u.id, name: u.name, email: u.email, telegramConnected: !!u.telegram, telegramName: u.telegram_name, created: u.created });
+const publicUser = (u: UserRow) => ({ id: u.id, name: u.name, email: u.email, role: u.role, telegramConnected: !!u.telegram, telegramName: u.telegram_name, created: u.created });
 
 export function createApp(config: Config, store = new Store(config.dbPath), bridge = new TelegramBridge(config, store)) {
   const app = express(); app.disable('x-powered-by');
@@ -100,7 +101,18 @@ export function createApp(config: Config, store = new Store(config.dbPath), brid
     res.cookie(cookieName, cookie, { httpOnly: true, secure: config.production, sameSite: 'strict', path: cookiePath, maxAge: SESSION_TTL_MS });
     next();
   });
-  app.get('/api/me', (req, res) => res.json({ user: publicUser(req.auth!.user), csrf: req.auth!.csrf }));
+  app.get('/api/me', (req, res) => res.json({ user: publicUser(req.auth!.user), csrf: req.auth!.csrf, catalog: accessibleCatalog(readCatalog(), undefined, req.auth!.user.role === 'admin') }));
+  app.get('/api/admin/users', (req, res) => {
+    if (req.auth!.user.role !== 'admin') throw new AppError(403, 'FORBIDDEN', 'Доступ только для администратора.');
+    const { offset } = z.object({ offset: z.coerce.number().int().min(0).default(0) }).parse(req.query);
+    const rows = store.db.prepare('SELECT id FROM users ORDER BY created,id LIMIT 50 OFFSET ?').all(offset);
+    res.json({ users: rows.map(row => publicUser(store.user(String(row.id))!)), total: Number(store.db.prepare('SELECT COUNT(*) AS total FROM users').get()!.total) });
+  });
+  app.patch('/api/admin/users/:id/role', (req, res) => {
+    if (req.auth!.user.role !== 'admin') throw new AppError(403, 'FORBIDDEN', 'Доступ только для администратора.');
+    const { role } = z.object({ role: z.enum(['student', 'admin']) }).strict().parse(req.body);
+    res.json({ user: publicUser(setUserRole(store, String(req.params.id), role, req.auth!.user.id)) });
+  });
   app.post('/api/auth/logout', async (req, res) => {
     const { user, session } = req.auth!; store.db.prepare('DELETE FROM sessions WHERE hash=?').run(session);
     await bridge.cancel(user.id, session); clearSession(res); res.json({ ok: true });
@@ -145,12 +157,12 @@ export function createApp(config: Config, store = new Store(config.dbPath), brid
   app.post('/api/telegram/cancel', async (req, res) => { await bridge.exclusive(req.auth!.user.id, () => bridge.cancel(req.auth!.user.id, req.auth!.session)); res.json({ ok: true }); });
   app.get('/api/learning', async (req, res) => {
     const progress = await bridge.exclusive(req.auth!.user.id, () => bridge.learning(req.auth!.user.id, req.auth!.session));
-    res.json({ ...progress, catalog: accessibleCatalog(readCatalog(), progress) });
+    res.json({ ...progress, catalog: accessibleCatalog(readCatalog(), progress, req.auth!.user.role === 'admin') });
   });
   app.post('/api/learning/complete', async (req, res) => {
     const { stepId } = z.object({ stepId: z.string().regex(/^[a-f0-9-]{36}$/i) }).strict().parse(req.body);
     const progress = await bridge.exclusive(req.auth!.user.id, () => bridge.completeLearningStep(req.auth!.user.id, req.auth!.session, stepId));
-    res.json({ ...progress, catalog: accessibleCatalog(readCatalog(), progress) });
+    res.json({ ...progress, catalog: accessibleCatalog(readCatalog(), progress, req.auth!.user.role === 'admin') });
   });
   app.get('/api/telegram/messages', async (req, res) => { res.json({ messages: await bridge.exclusive(req.auth!.user.id, () => bridge.messages(req.auth!.user.id, req.auth!.session)), syncedAt: Date.now() }); });
   app.post('/api/telegram/click', async (req, res) => {

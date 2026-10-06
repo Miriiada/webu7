@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync, chmodSync } from 'node:fs';
 import { dirname } from 'node:path';
-export interface UserRow { id: string; email: string; name: string; password: string; totp: string | null; otp_last: number; telegram: string | null; telegram_id: string | null; telegram_name: string | null; created: number; }
+export interface UserRow { id: string; email: string; name: string; password: string; role: 'student' | 'admin'; totp: string | null; otp_last: number; telegram: string | null; telegram_id: string | null; telegram_name: string | null; created: number; }
 export class Store {
   db: DatabaseSync;
   constructor(file: string) {
@@ -16,6 +16,9 @@ export class Store {
       CREATE TABLE IF NOT EXISTS learning_steps (user_id TEXT NOT NULL REFERENCES users(id), telegram_id TEXT NOT NULL, step_id TEXT NOT NULL, evidence INTEGER NOT NULL, PRIMARY KEY(user_id,telegram_id,step_id));
       CREATE TABLE IF NOT EXISTS learning_history (user_id TEXT NOT NULL REFERENCES users(id), telegram_id TEXT NOT NULL, cursor INTEGER NOT NULL DEFAULT 0, exhausted INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(user_id,telegram_id));
       CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);`);
+    if (!this.db.prepare('PRAGMA table_info(users)').all().some(column => column.name === 'role')) {
+      this.db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student' CHECK(role IN ('student','admin'))");
+    }
     // Revisit history when the parser learns new evidence formats; retain confirmed marks.
     if (this.db.prepare("SELECT value FROM settings WHERE key='learning_parser_version'").get()?.value !== '2') {
       this.db.prepare('UPDATE learning_history SET cursor=0,exhausted=0').run();
