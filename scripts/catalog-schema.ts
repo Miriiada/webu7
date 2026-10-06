@@ -6,7 +6,7 @@ const courses = z.array(z.object({ uuid: id, title: text, description: text.opti
 const modules = z.array(z.object({ uuid: id, title: text, description: text.optional(), status, projects: z.array(z.object({ uuid: id.optional(), title: text.optional(), status: status.optional(), lessonIds: z.array(id) })) }));
 const lessons = z.array(z.object({ uuid: id, moduleId: id, title: text, status, estimatedMinutes: z.number().optional(), stepIds: z.array(id) }));
 const steps = z.array(z.object({ uuid: id, description: text.optional(), status, content: text.optional(), code: text.optional(), kind: text.optional() }));
-export function normalize(input: unknown[], revision: string): Catalog {
+export function normalize(input: unknown[], revision: string, previous?: Catalog): Catalog {
   const [c, m, l, s] = [courses.parse(input[0]), modules.parse(input[1]), lessons.parse(input[2]), steps.parse(input[3])] as const;
   const catalog: Catalog = {
     revision, source: 'https://github.com/a-kalki/u7-school', syncedAt: new Date().toISOString(),
@@ -22,5 +22,23 @@ export function normalize(input: unknown[], revision: string): Catalog {
   // Библиотека включает опубликованные уроки, ещё не включённые в проекты потока.
   for (const m of catalog.modules) m.lessonIds = [...new Set([...m.lessonIds, ...catalog.lessons.filter(l => l.moduleId === m.id).map(l => l.id)])];
   for (const l of catalog.lessons) l.stepIds = l.stepIds.filter(id => stepIds.has(id));
+  retainCatalogNames(catalog, previous);
   return catalog;
+}
+
+// Keep names used in existing bot messages, but only for the same stable UUID.
+export function retainCatalogNames(catalog: Catalog, previous?: Catalog) {
+  function retainNames(next: { title: string; aliases?: string[] }, old?: { title: string; aliases?: string[] }) {
+    if (!old) return;
+    const aliases = [...new Set([...(old.aliases || []), old.title])].filter(title => title !== next.title);
+    if (aliases.length) next.aliases = aliases;
+  }
+  for (const module of catalog.modules) {
+    const old = previous?.modules.find(m => m.id === module.id);
+    retainNames(module, old);
+    for (const project of module.projects || []) {
+      if (project.id) retainNames(project, old?.projects?.find(p => p.id === project.id));
+    }
+  }
+  for (const lesson of catalog.lessons) retainNames(lesson, previous?.lessons.find(l => l.id === lesson.id && l.moduleId === lesson.moduleId));
 }

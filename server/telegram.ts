@@ -28,7 +28,7 @@ export class TelegramBridge {
   private busy = new Set<string>();
   private touched = new Map<string, number>();
   private timer: ReturnType<typeof setInterval>;
-  constructor(private config: Config, private store: Store, private clientFactory?: (session: string) => TelegramClient) {
+  constructor(private config: Config, private store: Store, private clientFactory?: (session: string) => TelegramClient, private catalogProvider = readCatalog) {
     this.timer = setInterval(() => { void this.prune(); }, 30_000); this.timer.unref();
   }
   get configured() { return this.config.apiId > 0 && /^[a-f0-9]{32}$/i.test(this.config.apiHash); }
@@ -209,7 +209,7 @@ export class TelegramBridge {
     }
   }
   async learning(user: string, session: string, backfill = true): Promise<LearningProgress> {
-    const catalog = readCatalog(), row = this.store.user(user)!;
+    const catalog = this.catalogProvider(), row = this.store.user(user)!;
     const messages = await this.messages(user, session);
     const telegramId = row.telegram_id!;
     this.store.db.prepare('INSERT OR IGNORE INTO learning_history(user_id,telegram_id) VALUES(?,?)').run(user, telegramId);
@@ -240,7 +240,7 @@ export class TelegramBridge {
   async completeLearningStep(user: string, session: string, stepId: string) {
     const before = await this.learning(user, session, false);
     if (!before.current || before.current.stepId !== stepId || !before.current.ticket) throw expired();
-    const catalog = readCatalog();
+    const catalog = this.catalogProvider();
     const original = (await this.messages(user, session)).find(m => parseStep(m, catalog)?.stepId === stepId && m.buttons.flat().some(b => b.id && isCompleteButton(b.text)));
     const parsed = original && parseStep(original, catalog);
     const ticket = original?.buttons.flat().find(b => b.id && isCompleteButton(b.text))?.id;

@@ -2,6 +2,17 @@ import type { Catalog } from './content.js';
 import type { BotMessage } from './telegram.js';
 
 const clean = (s: string) => s.normalize('NFKC').replace(/\\([_*\[\]()~`>#+\-=|{}.!])/g, '$1').replace(/[*`]/g, '').replace(/\s+/g, ' ').trim();
+const names = (item: { title: string; aliases?: string[] }) => [item.title, ...(item.aliases || [])].map(clean);
+const matchesTitle = (item: { title: string; aliases?: string[] }, title: string) => names(item).includes(clean(title));
+function streamModule(catalog: Catalog, stream: string) {
+  const value = clean(stream);
+  const matches = catalog.modules.filter(m => names(m).some(title => value === title || value.startsWith(title + ' -')));
+  return matches.length === 1 ? matches[0] : undefined;
+}
+function streamProject(module: Catalog['modules'][number] | undefined, title: string) {
+  const matches = module?.projects?.filter(p => matchesTitle(p, title)) || [];
+  return matches.length === 1 ? matches[0] : undefined;
+}
 export function parseStep(message: Pick<BotMessage, 'text'>, catalog: Catalog) {
   const text = message.text;
   const stream = text.match(/Поток:\s*([^\n]+)/)?.[1];
@@ -11,11 +22,10 @@ export function parseStep(message: Pick<BotMessage, 'text'>, catalog: Catalog) {
   const count = text.match(/📊[^\n]*?\b(\d+)\s*\/\s*(\d+)/);
   if (!stream || !project || !lessonTitle || !step) return null;
   const index = Number(step[1]) - 1, total = Number(step[2]);
+  const module = streamModule(catalog, stream), selectedProject = streamProject(module, project);
   const candidates = catalog.lessons.filter(l => {
-    const module = catalog.modules.find(m => m.id === l.moduleId);
-    return clean(l.title) === clean(lessonTitle) && l.stepIds.length === total && index >= 0 && index < total
-      && module && (clean(stream) === clean(module.title) || clean(stream).startsWith(clean(module.title) + ' -'))
-      && module.projects?.some(p => clean(p.title) === clean(project) && p.lessonIds.includes(l.id))
+    return matchesTitle(l, lessonTitle) && l.stepIds.length === total && index >= 0 && index < total
+      && module?.id === l.moduleId && selectedProject?.lessonIds.includes(l.id)
       && clean(catalog.steps.find(s => s.id === l.stepIds[index])?.title || '') === clean(step[3]);
   });
   if (candidates.length !== 1) return null;
@@ -28,7 +38,7 @@ export function isCompleteButton(text: string) { return /^✅\s*Выполнен
 export function transitionCompletes(text: string, previous: NonNullable<ReturnType<typeof parseStep>>) {
   const title = text.match(/Урок\s*«([^\n]+)»\s*заверш[её]н/)?.[1];
   const project = text.match(/Проект\s*«([^»]+)»\s*заверш[её]н/)?.[1];
-  return previous.index === previous.lesson.stepIds.length - 1 && ((!!title && clean(title) === clean(previous.lesson.title)) || (!!project && clean(project) === previous.project) || /Поток полностью заверш[её]н/.test(text));
+  return previous.index === previous.lesson.stepIds.length - 1 && ((!!title && matchesTitle(previous.lesson, title)) || (!!project && clean(project) === previous.project) || /Поток полностью заверш[её]н/.test(text));
 }
 export function completionEvidence(messages: BotMessage[], catalog: Catalog) {
   const completed = new Map<string, number>();
@@ -36,14 +46,14 @@ export function completionEvidence(messages: BotMessage[], catalog: Catalog) {
   for (const m of [...messages].sort((a, b) => a.id - b.id)) {
     const reportStream = m.text.match(/📊\s*Мой прогресс\s*[—–-]\s*([^\n]+)/)?.[1];
     if (reportStream) {
-      const module = catalog.modules.find(x => clean(reportStream) === clean(x.title) || clean(reportStream).startsWith(clean(x.title) + ' -'));
+      const module = streamModule(catalog, reportStream);
       let project: NonNullable<Catalog['modules'][number]['projects']>[number] | undefined;
       for (const line of m.text.split('\n')) {
         const heading = line.match(/Проект\s+\d+:\s*(.+?)\s*[—–]\s*\[/);
-        if (heading) { project = module?.projects?.find(p => clean(p.title) === clean(heading[1])); continue; }
+        if (heading) { project = streamProject(module, heading[1]); continue; }
         const row = line.match(/^\s*✅\s*(.+?)\s*[—–]\s*\[[^\]]*\]\s*(\d+)\/(\d+)\s*$/);
         if (!row || !project || Number(row[2]) !== Number(row[3])) continue;
-        const matches = catalog.lessons.filter(l => project!.lessonIds.includes(l.id) && clean(l.title) === clean(row[1]) && l.stepIds.length === Number(row[3]));
+        const matches = catalog.lessons.filter(l => project!.lessonIds.includes(l.id) && matchesTitle(l, row[1]) && l.stepIds.length === Number(row[3]));
         if (matches.length === 1) for (const id of matches[0].stepIds) completed.set(id, m.id);
       }
     }

@@ -2,9 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readCatalog } from '../server/content.js';
 import { moduleLessons } from '../server/catalog-order.js';
+import { historicalCatalog } from './fixtures/catalog.js';
 
 test('Алгоритмика показывает действующие уроки по проектам, архивные дубликаты отдельно', () => {
-  const c = readCatalog(), m = c.modules.find(m => m.title === 'Алгоритмика')!;
+  const c = historicalCatalog(), m = c.modules.find(m => m.title === 'Алгоритмика')!;
   const { active, archived } = moduleLessons(c, m);
   assert.equal(active[0].id, 'b27b637c-2021-4eaf-895a-c32120416f0c');
   assert.equal(active[2].title, 'Первый коммит');

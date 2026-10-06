@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import bigInt from 'big-integer';
 import { Api, type TelegramClient } from 'teleproto';
-import { readCatalog } from '../server/content.js';
+import { historicalCatalog } from './fixtures/catalog.js';
 import { parseStep, completionEvidence } from '../server/progress.js';
 import { TelegramBridge, type BotMessage } from '../server/telegram.js';
 import { Store } from '../server/db.js';
 import { seal } from '../server/security.js';
 import type { Config } from '../server/config.js';
-const c = readCatalog();
+const c = historicalCatalog();
 const lesson = c.lessons.find(l => l.id === '01a09652-bf63-4ac1-b96d-7749abc1e543')!;
 function body(index = 4) { return `📖 Поток: Алгоритмика - 7\n📁 Проект: TDD и функции сравнения строк (первая реализация)\n📚 Урок: «${lesson.title}»\n🔢 p3-l2\n📊 [████████░░] ${index}/5\n📝 Шаг ${index + 1} из 5: ${c.steps.find(s => s.id === lesson.stepIds[index])!.title}`; }
 const msg = (text: string, id = 1): BotMessage => ({ text, id, date: 100, buttons: [] });
@@ -56,7 +56,7 @@ function fixture(mode: 'step' | 'lesson' | 'timeout' | 'menu' = 'step') {
       else list = [message(body(1), 3, '✅ Выполнено'), message(body(0), 1)];
       return { message: '' }; },
   } as unknown as TelegramClient;
-  const bridge = new TelegramBridge(config, store, () => fake);
+  const bridge = new TelegramBridge(config, store, () => fake, () => c);
   return { bridge, store, calls: () => calls, close: async () => { await bridge.close(); store.close(); } };
 }
 test('Чтение прогресса не нажимает кнопки; чужой шаг отклоняется; ответ бота подтверждает выполнение', async () => {

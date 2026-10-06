@@ -1,0 +1,616 @@
+{
+  "revision": "9c5a2526da82aa51a72501b07b9a8704250c9478",
+  "source": "https://github.com/a-kalki/u7-school",
+  "syncedAt": "2026-10-04T08:22:51.826Z",
+  "courses": [
+    {
+      "id": "29adc3be-873e-47ec-aa30-61f5e6e25d4e",
+      "title": "Fullstack JS",
+      "description": "Полный курс JavaScript с синтаксиса до командной разработки",
+      "moduleIds": [
+        "16b9026b-7cc6-4397-81bc-9a9791d3a76b"
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "id": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Алгоритмика",
+      "description": "Изучаем алгоритмическое мышление через реализацию стандартного API. Git, TDD, сравнение строк, поиск подстрок, трансформация, массивы, сортировки и поиск, O-нотация, JSDoc.",
+      "projects": [
+        {
+          "id": "2ad3eecc-7824-4cd1-bdb7-2046e136f8dd",
+          "title": "Git, TDD и посимвольное сравнение строк",
+          "status": "archived",
+          "lessonIds": [
+            "224091fe-4dc7-4057-a7f2-2ea358c19eea",
+            "e3698cdc-7ca9-4e7e-869c-4f97d3408d57",
+            "e89a960b-2293-42e3-be57-8890485a7003"
+          ]
+        },
+        {
+          "id": "0632e196-5485-4d7f-9cd9-d91625e49a5f",
+          "title": "Git и GitHub: первый репозиторий и Pull Request",
+          "status": "published",
+          "lessonIds": [
+            "b27b637c-2021-4eaf-895a-c32120416f0c",
+            "26a9e9d8-213b-4e61-b428-2cbc11971b51",
+            "8e3b59fd-4191-4de1-8dc2-79174e5f4c4d"
+          ]
+        },
+        {
+          "id": "04377250-a0ef-444b-b7d9-0046705844a1",
+          "title": "Код-ревью: правила и первый полный цикл",
+          "status": "published",
+          "lessonIds": [
+            "cf7f8cd7-7e7b-4ad8-b18f-fe99749bf249",
+            "f2d7f9b4-5960-41a4-87a3-859a5baaa627",
+            "41557245-178d-4d95-ae72-a1bc7adf3eb9",
+            "17edb2fe-fb65-4f27-937f-4cd158e9033e",
+            "6d5dddbd-2ac3-451e-a674-c8253e291609",
+            "6bd16e49-fdb6-403b-871d-e8a990e24222",
+            "d34e7c86-59b0-40cc-9a2f-d2332e838364",
+            "5a0f31d8-de9f-4c12-b1c2-e13f2f2e6f9e"
+          ]
+        },
+        {
+          "id": "5c09e9a8-74aa-4e19-a3a9-f4b189be73a5",
+          "title": "TDD и функции сравнения строк (первая реализация)",
+          "status": "published",
+          "lessonIds": [
+            "01a09652-bf63-4ac1-b96d-7749abc1e543"
+          ]
+        }
+      ],
+      "lessonIds": [
+        "b27b637c-2021-4eaf-895a-c32120416f0c",
+        "26a9e9d8-213b-4e61-b428-2cbc11971b51",
+        "8e3b59fd-4191-4de1-8dc2-79174e5f4c4d",
+        "cf7f8cd7-7e7b-4ad8-b18f-fe99749bf249",
+        "f2d7f9b4-5960-41a4-87a3-859a5baaa627",
+        "41557245-178d-4d95-ae72-a1bc7adf3eb9",
+        "17edb2fe-fb65-4f27-937f-4cd158e9033e",
+        "6d5dddbd-2ac3-451e-a674-c8253e291609",
+        "6bd16e49-fdb6-403b-871d-e8a990e24222",
+        "d34e7c86-59b0-40cc-9a2f-d2332e838364",
+        "5a0f31d8-de9f-4c12-b1c2-e13f2f2e6f9e",
+        "01a09652-bf63-4ac1-b96d-7749abc1e543",
+        "224091fe-4dc7-4057-a7f2-2ea358c19eea",
+        "e3698cdc-7ca9-4e7e-869c-4f97d3408d57",
+        "e89a960b-2293-42e3-be57-8890485a7003"
+      ]
+    }
+  ],
+  "lessons": [
+    {
+      "id": "224091fe-4dc7-4057-a7f2-2ea358c19eea",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Что такое Git и зачем он нужен",
+      "minutes": 15,
+      "stepIds": [
+        "dd3db76b-9675-484a-a065-690df415f88b",
+        "a3b97480-2f99-4a5e-95b8-c691aa8a7dad",
+        "f2362bc2-a105-419e-bd2e-20b373df410c"
+      ]
+    },
+    {
+      "id": "e3698cdc-7ca9-4e7e-869c-4f97d3408d57",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Первый репозиторий",
+      "minutes": 15,
+      "stepIds": [
+        "0dd2f10f-0565-47c2-adcf-35e5a05393bb",
+        "4c37f763-7e84-4f77-8e17-53c05d723465",
+        "11c4808e-ba76-4440-a0b4-72519ea7e77d"
+      ]
+    },
+    {
+      "id": "e89a960b-2293-42e3-be57-8890485a7003",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Обработка ошибок: throw и try-catch",
+      "minutes": 15,
+      "stepIds": [
+        "3689b9d7-a971-48ba-91f1-757d0365db02",
+        "e39b9eed-9b68-48d3-8bc1-798e230e6880",
+        "71956de9-a338-41cb-81e3-22f335f9f70f",
+        "f6cae9fc-b10e-41cc-8a95-76f1238287d5",
+        "41d1bf08-c8b5-4c5c-8a47-a7dd3aecb53b"
+      ]
+    },
+    {
+      "id": "b27b637c-2021-4eaf-895a-c32120416f0c",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Что такое Git и зачем он нужен",
+      "minutes": 15,
+      "stepIds": [
+        "fafb9801-78ae-4b14-9874-3a6d2010bc09",
+        "6f80b4b2-951a-4c68-ab17-41c5d2c68839",
+        "f9fde003-a6c5-4869-91af-80fe2e6948c9",
+        "0afc4476-8749-47a4-b44f-327e1cf67ab9"
+      ]
+    },
+    {
+      "id": "26a9e9d8-213b-4e61-b428-2cbc11971b51",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Первый репозиторий",
+      "minutes": 15,
+      "stepIds": [
+        "1fda6d14-1288-464a-9da7-dea8bccf2714",
+        "e65409c7-43d5-4848-a2d7-23c5e342c6dc",
+        "3e47d323-20ad-4153-8e99-20f753b54cba",
+        "a2279e28-d74c-4cc0-9638-b472228f09ce"
+      ]
+    },
+    {
+      "id": "8e3b59fd-4191-4de1-8dc2-79174e5f4c4d",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Первый коммит",
+      "minutes": 15,
+      "stepIds": [
+        "ecd85a97-8f18-4963-853c-d6435e84e67e",
+        "8a73ea80-6bd6-418d-a568-0467984cf004",
+        "9a21ac1b-fec9-4413-b3f3-239a79f23c68",
+        "0c533161-73d6-4c7c-9a3b-00097b4738f0"
+      ]
+    },
+    {
+      "id": "cf7f8cd7-7e7b-4ad8-b18f-fe99749bf249",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Как работает код-ревью",
+      "minutes": 15,
+      "stepIds": [
+        "60149f96-f052-435e-9238-fb673d2e9c00",
+        "d08e14e1-1193-44ba-b121-4a77c598ab8e",
+        "d7b410f2-11bd-4f9e-af75-42f9219fbc51"
+      ]
+    },
+    {
+      "id": "f2d7f9b4-5960-41a4-87a3-859a5baaa627",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Правила ревью",
+      "minutes": 15,
+      "stepIds": [
+        "7fa4d535-63f0-45bc-b285-c038755d7047",
+        "c4aee53f-eeb1-4b85-a6e1-95ff521f230e",
+        "870e4b3e-f9fd-4756-a71c-74352daf85c7"
+      ]
+    },
+    {
+      "id": "41557245-178d-4d95-ae72-a1bc7adf3eb9",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Практика: мини-ревью на образце",
+      "minutes": 20,
+      "stepIds": [
+        "a2f32ff9-c624-4d3f-afa1-92f72c1432f8",
+        "fb222a2c-d328-4788-ab20-88b0026cf062"
+      ]
+    },
+    {
+      "id": "17edb2fe-fb65-4f27-937f-4cd158e9033e",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Доработка по ревью",
+      "minutes": 15,
+      "stepIds": [
+        "89ef7205-65ab-4c01-8c35-654a4aa2877b",
+        "b7495335-a3e0-428b-8812-8b72e398bffb",
+        "4055269d-04e5-4612-a213-5a6f5dd56052"
+      ]
+    },
+    {
+      "id": "6d5dddbd-2ac3-451e-a674-c8253e291609",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Пока ждёшь апрувы",
+      "minutes": 10,
+      "stepIds": [
+        "374e93d4-80ac-489c-8ce3-c53d2c97324a",
+        "46af4654-2d2f-4690-9007-bc154ae569bd"
+      ]
+    },
+    {
+      "id": "6bd16e49-fdb6-403b-871d-e8a990e24222",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Ревьюим чужой homework-PR",
+      "minutes": 25,
+      "stepIds": [
+        "0b34dbd4-0475-477f-b7d2-822e2b0699c3",
+        "e1c501f9-388b-4efb-9804-9a5432eb9eb6",
+        "3fdd512c-c33a-4753-954c-dcfaf4d96ba0"
+      ]
+    },
+    {
+      "id": "d34e7c86-59b0-40cc-9a2f-d2332e838364",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Финальный мерж homework-PR",
+      "minutes": 20,
+      "stepIds": [
+        "d88b2bd4-096e-4e77-9940-b910f3e7392a",
+        "4b367178-b017-4743-9360-df5dcce4a621",
+        "19a1abd8-824a-4616-8ff2-89c68d7a689e",
+        "1e9c48b0-0115-44d3-bcf9-2731afc13aac",
+        "d4c57fed-44d1-424c-b2d6-8b5013e50809"
+      ]
+    },
+    {
+      "id": "5a0f31d8-de9f-4c12-b1c2-e13f2f2e6f9e",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "ДЗ: статья «Git для новичков» (часть 2)",
+      "minutes": 40,
+      "stepIds": [
+        "5c4b1fb9-dcfd-4c3b-ba81-2d61afc28312",
+        "73f37601-80a2-44eb-b18c-283ab51f114f"
+      ]
+    },
+    {
+      "id": "01a09652-bf63-4ac1-b96d-7749abc1e543",
+      "moduleId": "16b9026b-7cc6-4397-81bc-9a9791d3a76b",
+      "title": "Обработка ошибок: throw и try-catch",
+      "minutes": 25,
+      "stepIds": [
+        "329d9fee-e566-4ebb-ae1d-e09ecc769891",
+        "086b5379-6d59-4656-9822-4136e995fb70",
+        "0a6bb9af-946d-4e57-b5b8-5fa021aa7663",
+        "433995ea-9c60-464e-980f-04ad1b49d6fd",
+        "3b4322da-8796-455e-8019-e47cf08e7580"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "dd3db76b-9675-484a-a065-690df415f88b",
+      "title": "О ресурсе w3-school",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "a3b97480-2f99-4a5e-95b8-c691aa8a7dad",
+      "title": "Что такое Git",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "f2362bc2-a105-419e-bd2e-20b373df410c",
+      "title": "Контрольные вопросы: коммит, stage и ветки",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "0dd2f10f-0565-47c2-adcf-35e5a05393bb",
+      "title": "Инициализация репозитория и git init",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "4c37f763-7e84-4f77-8e17-53c05d723465",
+      "title": "Настройка .gitignore",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "11c4808e-ba76-4440-a0b4-72519ea7e77d",
+      "title": "Контрольные вопросы по Git",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "3689b9d7-a971-48ba-91f1-757d0365db02",
+      "title": "Зачем нужна обработка ошибок",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "e39b9eed-9b68-48d3-8bc1-798e230e6880",
+      "title": "Оператор throw и типы ошибок",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "71956de9-a338-41cb-81e3-22f335f9f70f",
+      "title": "try-catch — перехват ошибок",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "f6cae9fc-b10e-41cc-8a95-76f1238287d5",
+      "title": "Предскажи вывод: практика с throw и try-catch",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "41d1bf08-c8b5-4c5c-8a47-a7dd3aecb53b",
+      "title": "Реализуй repeat() с проверкой аргументов",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "fafb9801-78ae-4b14-9874-3a6d2010bc09",
+      "title": "Карта проекта 1: что тебя ждёт",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "6f80b4b2-951a-4c68-ab17-41c5d2c68839",
+      "title": "О ресурсе w3-school",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "f9fde003-a6c5-4869-91af-80fe2e6948c9",
+      "title": "Что такое Git",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "0afc4476-8749-47a4-b44f-327e1cf67ab9",
+      "title": "Контрольные вопросы: коммит, stage и ветки",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "1fda6d14-1288-464a-9da7-dea8bccf2714",
+      "title": "Инициализация репозитория и git init",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "e65409c7-43d5-4848-a2d7-23c5e342c6dc",
+      "title": "Проверь имя основной ветки",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "3e47d323-20ad-4153-8e99-20f753b54cba",
+      "title": "Настройка .gitignore",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "a2279e28-d74c-4cc0-9638-b472228f09ce",
+      "title": "Контрольные вопросы по Git",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "ecd85a97-8f18-4963-853c-d6435e84e67e",
+      "title": "Git Commit: создание коммитов",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "8a73ea80-6bd6-418d-a568-0467984cf004",
+      "title": "Правила хорошего commit-сообщения",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "9a21ac1b-fec9-4413-b3f3-239a79f23c68",
+      "title": "Сделай первый коммит",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "0c533161-73d6-4c7c-9a3b-00097b4738f0",
+      "title": "История коммитов: git log",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "60149f96-f052-435e-9238-fb673d2e9c00",
+      "title": "Зачем нужно ревью, если код и так работает",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "d08e14e1-1193-44ba-b121-4a77c598ab8e",
+      "title": "Как работает код-ревью на GitHub",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "d7b410f2-11bd-4f9e-af75-42f9219fbc51",
+      "title": "Кто такие ревьюеры в нашем курсе",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "7fa4d535-63f0-45bc-b285-c038755d7047",
+      "title": "Тон комментариев: предложение vs критическое",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "c4aee53f-eeb1-4b85-a6e1-95ff521f230e",
+      "title": "Итог ревью: Approve vs Request changes",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "870e4b3e-f9fd-4756-a71c-74352daf85c7",
+      "title": "Памятка: что проверяем",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "a2f32ff9-c624-4d3f-afa1-92f72c1432f8",
+      "title": "Практика: проведи мини-ревью",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "fb222a2c-d328-4788-ab20-88b0026cf062",
+      "title": "Разбор мини-ревью",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "89ef7205-65ab-4c01-8c35-654a4aa2877b",
+      "title": "Процесс доработки",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "b7495335-a3e0-428b-8812-8b72e398bffb",
+      "title": "Практика: ответ на замечание",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "4055269d-04e5-4612-a213-5a6f5dd56052",
+      "title": "Запрос повторного ревью",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "374e93d4-80ac-489c-8ce3-c53d2c97324a",
+      "title": "Следи за чатом и уведомлениями",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "46af4654-2d2f-4690-9007-bc154ae569bd",
+      "title": "Что делать, если ревьюер не отвечает",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "0b34dbd4-0475-477f-b7d2-822e2b0699c3",
+      "title": "Найди PR для ревью",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "e1c501f9-388b-4efb-9804-9a5432eb9eb6",
+      "title": "Проведи ревью по памятке",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "3fdd512c-c33a-4753-954c-dcfaf4d96ba0",
+      "title": "Заверши ревью и ответь на вопросы",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "d88b2bd4-096e-4e77-9940-b910f3e7392a",
+      "title": "Финальная проверка",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "4b367178-b017-4743-9360-df5dcce4a621",
+      "title": "Мерж через интерфейс GitHub",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "19a1abd8-824a-4616-8ff2-89c68d7a689e",
+      "title": "Обновление локального main",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "1e9c48b0-0115-44d3-bcf9-2731afc13aac",
+      "title": "Очистка локальных веток",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "d4c57fed-44d1-424c-b2d6-8b5013e50809",
+      "title": "Осмысление итогов",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "5c4b1fb9-dcfd-4c3b-ba81-2d61afc28312",
+      "title": "Прочитай статью и законспектируй",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "73f37601-80a2-44eb-b18c-283ab51f114f",
+      "title": "Пуш прямо в `main`",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "329d9fee-e566-4ebb-ae1d-e09ecc769891",
+      "title": "Зачем нужна обработка ошибок",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "086b5379-6d59-4656-9822-4136e995fb70",
+      "title": "Оператор throw и типы ошибок",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "0a6bb9af-946d-4e57-b5b8-5fa021aa7663",
+      "title": "try-catch — перехват ошибок",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "433995ea-9c60-464e-980f-04ad1b49d6fd",
+      "title": "Предскажи вывод: практика с throw и try-catch",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    },
+    {
+      "id": "3b4322da-8796-455e-8019-e47cf08e7580",
+      "title": "Реализуй repeat() с проверкой аргументов",
+      "content": "",
+      "code": "",
+      "kind": "text"
+    }
+  ]
+}
