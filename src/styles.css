@@ -86,3 +86,19 @@
 :root[data-theme="light"] .step-completed{border-color:#afd3bd}
 :root[data-theme="light"] .step-current{border-color:#9675c8}
 :root[data-theme="light"] .skip-link{color:white}
+
+.module-structure{font-size:.75rem;color:var(--accent);margin-top:5px}
+.catalog-project-heading{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:22px 28px;background:#20212b;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.catalog-project-heading .eyebrow{display:block;margin-bottom:5px;color:var(--accent)}
+.catalog-project-heading h3{font-size:1rem;line-height:1.5}
+.catalog-project-heading>span{font-size:.75rem;color:var(--muted);white-space:nowrap}
+.lesson-list button.lesson-viewed{background:#292438;box-shadow:inset 3px 0 var(--accent)}
+.viewed-lesson-label{display:block;font-size:.75rem;color:var(--accent);margin-top:4px;font-weight:400}
+.lesson-pagination{display:flex;gap:16px;margin:8px 0 24px}
+.lesson-pagination>button{flex:1;min-width:0;justify-content:flex-start;padding:18px;text-align:left}
+.lesson-pagination>button:last-child{justify-content:flex-end;text-align:right}
+.lesson-pagination span{min-width:0;display:flex;flex-direction:column;gap:5px}
+.lesson-pagination small{font-weight:400;color:var(--muted);overflow-wrap:anywhere}
+:root[data-theme="light"] .catalog-project-heading{background:#f6f3fc}
+:root[data-theme="light"] .lesson-list button.lesson-viewed{background:#eee8fa;box-shadow:inset 3px 0 var(--accent)}
+@media(max-width:570px){.catalog-project-heading{padding:18px;gap:10px;align-items:flex-start;flex-direction:column}.lesson-pagination{gap:10px}.lesson-pagination>button{padding:13px 10px;gap:6px}.lesson-pagination small{font-size:.75rem}}
