@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { normalize } from './catalog-schema.js';
 import type { Catalog } from '../server/content.js';
+import { checkMentorParser } from './mentor-parser.js';
 const headers = { 'User-Agent': 'u7-astra-content-sync', Accept: 'application/vnd.github+json' };
 async function json(url: string) {
   const response = await fetch(url, { headers, signal: AbortSignal.timeout(20_000), redirect: 'error' });
@@ -15,6 +16,7 @@ if (process.argv.includes('--check')) {
   const current = JSON.parse(readFileSync('data/catalog.json', 'utf8')).revision;
   console.log(current === commit.sha ? `Материалы актуальны: ${current}` : `Есть новая ревизия: ${commit.sha}. Локальная: ${current}. Выполните npm run sync:content и проверьте результат.`);
 } else {
+  await checkMentorParser(commit.sha);
   const raw = await Promise.all(['courses', 'modules', 'lessons', 'steps'].map(name => json(`https://raw.githubusercontent.com/a-kalki/u7-school/${commit.sha}/data/courses/${name}.json`)));
   const previous: Catalog | undefined = existsSync('data/catalog.json') ? JSON.parse(readFileSync('data/catalog.json', 'utf8')) : undefined;
   const catalog = normalize(raw, commit.sha, previous);

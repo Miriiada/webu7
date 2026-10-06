@@ -1,5 +1,5 @@
-export interface User { id: string; name: string; email: string; role: 'student' | 'admin'; telegramConnected: boolean; telegramName: string | null; created: number; }
-export interface BotMessage { id: number; text: string; date: number; buttons: { id?: string; text: string; url?: string; disabled?: boolean }[][]; }
+export interface User { id: string; name: string; email: string; role: 'user' | 'student' | 'mentor'; telegramConnected: boolean; telegramName: string | null; created: number; }
+export interface BotMessage { id: number; text: string; date: number; entities?: import('../server/telegram-format').TextEntity[]; buttons: { id?: string; text: string; url?: string; disabled?: boolean }[][]; }
 export type { Catalog } from '../server/content';
 let csrf = '';
 export function setCsrf(value: string) { csrf = value; }

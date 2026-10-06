@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync, chmodSync } from 'node:fs';
 import { dirname } from 'node:path';
-export interface UserRow { id: string; email: string; name: string; password: string; role: 'student' | 'admin'; totp: string | null; otp_last: number; telegram: string | null; telegram_id: string | null; telegram_name: string | null; created: number; }
+export interface UserRow { id: string; email: string; name: string; password: string; role: 'student' | 'admin'; totp: string | null; otp_last: number; telegram: string | null; telegram_id: string | null; telegram_name: string | null; created: number; bot_access: number; bot_access_date: number; bot_access_message: number; }
 export class Store {
   db: DatabaseSync;
   constructor(file: string) {
@@ -19,6 +19,10 @@ export class Store {
     if (!this.db.prepare('PRAGMA table_info(users)').all().some(column => column.name === 'role')) {
       this.db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student' CHECK(role IN ('student','admin'))");
     }
+    const userColumns = this.db.prepare('PRAGMA table_info(users)').all();
+    if (!userColumns.some(column => column.name === 'bot_access')) this.db.exec('ALTER TABLE users ADD COLUMN bot_access INTEGER NOT NULL DEFAULT 0');
+    if (!userColumns.some(column => column.name === 'bot_access_date')) this.db.exec('ALTER TABLE users ADD COLUMN bot_access_date INTEGER NOT NULL DEFAULT 0');
+    if (!userColumns.some(column => column.name === 'bot_access_message')) this.db.exec('ALTER TABLE users ADD COLUMN bot_access_message INTEGER NOT NULL DEFAULT 0');
     const historyColumns = this.db.prepare('PRAGMA table_info(learning_history)').all();
     if (!historyColumns.some(column => column.name === 'revision')) this.db.exec("ALTER TABLE learning_history ADD COLUMN revision TEXT NOT NULL DEFAULT ''");
     if (!historyColumns.some(column => column.name === 'head')) this.db.exec('ALTER TABLE learning_history ADD COLUMN head INTEGER NOT NULL DEFAULT 0');

@@ -14,14 +14,14 @@ if (command === 'setup') {
   } else console.log('.env уже существует; ключ сохранён.');
   console.log('Заполните TELEGRAM_API_ID и TELEGRAM_API_HASH в .env, затем запустите сайт и создайте кабинет.');
 } else if (command === 'set-role') {
-  const email = process.argv[3]?.trim().toLowerCase(), role = process.argv[4];
-  if (!email || !['admin', 'student'].includes(role)) throw new Error('Использование: set-role email admin|student');
+  const email = process.argv[3]?.trim().toLowerCase(), requested = process.argv[4], role = requested === 'mentor' ? 'admin' : requested === 'user' ? 'student' : requested;
+  if (!email || !['admin', 'student'].includes(role)) throw new Error('Использование: set-role email mentor|user');
   const config = loadConfig(), store = new Store(config.dbPath);
   try {
     const user = store.email(email);
     if (!user) throw new Error('Пользователь не найден. Сначала создайте кабинет.');
     setUserRole(store, user.id, role as 'admin' | 'student');
-    console.log(`Роль обновлена: ${role}. Обновите страницу кабинета.`);
+    console.log(`Роль обновлена: ${role === 'admin' ? 'Ментор' : 'Автоматический статус по доступу в боте'}. Обновите страницу кабинета.`);
   } finally { store.close(); }
 } else if (command === 'forget-telegram') {
   const config = loadConfig(), store = new Store(config.dbPath), rl = createInterface({ input: stdin, output: stdout });

@@ -76,6 +76,7 @@ function fixture(mode: 'step' | 'lesson' | 'timeout' | 'menu' = 'step') {
   const peer = new Api.User({ id: bigInt(100), bot: true });
   const message = (text: string, id: number, button?: string) => new Api.Message({ id, date: 100, message: text, peerId: new Api.PeerUser({ userId: peer.id }), replyMarkup: button ? new Api.ReplyInlineMarkup({ rows: [new Api.KeyboardInlineButtonRow({ buttons: [new Api.KeyboardInlineButton({ text: button, type: new Api.InlineButtonTypeCallback({ data: Buffer.from(String(id)) }) })] })] }) : undefined });
   let list = [message(body(mode === 'lesson' ? 4 : 0), 1, '✅ Выполнено')], calls = 0;
+  if (mode === 'menu') store.db.prepare('UPDATE users SET bot_access=1 WHERE id=?').run('alice');
   if (mode === 'menu') list = [message('Главное меню', 2, 'Моя учёба'), message(body(0), 1)];
   const fake = { connect: async () => {}, destroy: async () => {}, getEntity: async () => peer,
     getMessages: async (_peer: unknown, args: { ids?: number[] }) => args.ids ? list.filter(m => args.ids!.includes(m.id)) : list,

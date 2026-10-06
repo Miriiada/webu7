@@ -12,9 +12,12 @@ import type { Config } from './config.js';
 import { Store } from './db.js';
 import { AppError, digest, seal, unseal, token, safeUrl } from './security.js';
 import { isRevokedTelegramSession } from './telegram-errors.js';
+import { observeBotAccess } from './roles.js';
+import type { TextEntity } from './telegram-format.js';
+import { compareBotMaterial } from './telegram-format.js';
 
 export interface BotButton { id?: string; text: string; url?: string; disabled?: boolean; }
-export interface BotMessage { id: number; text: string; date: number; buttons: BotButton[][]; }
+export interface BotMessage { id: number; text: string; date: number; buttons: BotButton[][]; entities?: TextEntity[]; }
 interface Pending { client: TelegramClient; phone: string; hash: string; expires: number; session: string; password: boolean; nextDelivery: string | null; resendAt: number; qr?: { id: string; image: string; expires: number; dirty: boolean }; }
 interface Ticket { user: string; session: string; message: number; data: Buffer; fingerprint: string; expires: number; }
 const expired = () => new AppError(409, 'STALE_BUTTON', 'Экран бота изменился. Обновите чат и нажмите актуальную кнопку.');
@@ -152,7 +155,7 @@ export class TelegramBridge {
       await p.client.invoke(new Api.auth.LogOut()).catch(() => {}); await p.client.destroy(); this.pending.delete(user);
       throw new AppError(409, 'ACCOUNT_LINKED', 'Этот Telegram уже подключён к другому кабинету.');
     }
-    this.store.db.prepare('UPDATE users SET telegram=?,telegram_id=?,telegram_name=? WHERE id=?').run(seal(p.client.session.save() as unknown as string, this.config.key, `telegram:${user}`), telegramId, [me.firstName, me.lastName].filter(Boolean).join(' '), user);
+    this.store.db.prepare('UPDATE users SET telegram=?,telegram_id=?,telegram_name=?,bot_access=0,bot_access_date=0,bot_access_message=0 WHERE id=?').run(seal(p.client.session.save() as unknown as string, this.config.key, `telegram:${user}`), telegramId, [me.firstName, me.lastName].filter(Boolean).join(' '), user);
     p.client._requestRetries = 1;
     this.pending.delete(user); this.clients.set(user, p.client); this.touched.set(user, Date.now()); this.store.audit(user, 'telegram.connected');
     return { stage: 'connected' };
@@ -187,6 +190,19 @@ export class TelegramBridge {
   private async readMessages(user: string, session: string) {
     const client = await this.client(user), peer = await this.peer(client);
     const messages = await client.getMessages(peer, { limit: 35 });
+    // Only bot-originated screens are access evidence, never completion history.
+    for (const m of messages.filter((m): m is Api.Message => m instanceof Api.Message && !m.out).sort((a, b) => (a.editDate || a.date) - (b.editDate || b.date) || a.id - b.id)) {
+      const denied = /^(?:📖\s*)?Вы не записаны ни на один поток|^Ты покинул учёбу|^(?:⚠️\s*)?Вы (?:покинули|отчислены)|^(?:⚠️\s*)?Доступ к (?:урокам|обучению|курсу) (?:закрыт|отозван)/i.test(m.message);
+      const buttons = m.replyMarkup instanceof Api.ReplyInlineMarkup ? m.replyMarkup.rows.flatMap(r => r.buttons) : [];
+      const granted = buttons.some(b => b.type instanceof Api.InlineButtonTypeCallback && (
+        /^(?:step-view:my-study:(?:continue|view:)|nav-tree:my-study:lessons|progress:progress:|step-view:complete:)/.test(Buffer.from(b.type.data).toString('utf8'))
+        // The running bot may compress callback data; a recognized course screen
+        // with its completion button is equivalent evidence of material access.
+        || (isCompleteButton(b.text) && !!parseStep({ text: m.message }, this.catalogProvider()))
+        || (/^📖\s*Моя учёба/.test(m.message) && /Мой прогресс|Уроки|(?:Начать|Продолжить) учёбу/.test(b.text))
+      ));
+      if (denied || granted) observeBotAccess(this.store, user, !denied, m.editDate || m.date, m.id);
+    }
     for (const [id, ticket] of this.tickets) if (ticket.user === user && ticket.session === session) this.tickets.delete(id);
     return messages.filter((m): m is Api.Message => m instanceof Api.Message && !m.out).slice(0, 15).map(m => {
       const fingerprint = messageFingerprint(m);
@@ -200,7 +216,8 @@ export class TelegramBridge {
         if (button.type instanceof Api.InlineButtonTypeUrl) { const url = safeUrl(button.type.url); if (url) return { text: button.text, url }; }
         return { text: button.text, disabled: true };
       }));
-      return { id: m.id, text: m.message, date: m.editDate || m.date, buttons };
+      const entities: TextEntity[] = (m.entities || []).map(e => ({ type: e.className.replace('MessageEntity', '').toLowerCase(), offset: e.offset, length: e.length, ...('url' in e && typeof e.url === 'string' ? { url: e.url } : {}) }));
+      return { id: m.id, text: m.message, date: m.editDate || m.date, buttons, entities };
     });
   }
   async messages(user: string, session: string) {
@@ -226,7 +243,7 @@ export class TelegramBridge {
       this.store.db.prepare('UPDATE learning_history SET cursor=0,exhausted=0,revision=? WHERE user_id=? AND telegram_id=?').run(catalog.revision, user, telegramId);
       history.cursor = 0; history.exhausted = 0;
     }
-    const evidenceMessages = [...messages];
+    const evidenceMessages: BotMessage[] = [...messages];
     if (backfill && !history.exhausted) {
       const client = await this.client(user), peer = await this.peer(client);
       const batch = await client.getMessages(peer, { limit: 100, offsetId: Number(history.cursor) || 0 });
@@ -244,9 +261,13 @@ export class TelegramBridge {
     const screen = messages.find(m => parseStep(m, catalog));
     const parsed = screen ? parseStep(screen, catalog) : null;
     const button = screen?.buttons.flat().find(b => b.id && isCompleteButton(b.text));
-    const current = parsed && !done.has(parsed.stepId) ? { lessonId: parsed.lesson.id, stepId: parsed.stepId, title: catalog.steps.find(s => s.id === parsed.stepId)!.title, stream: parsed.stream, ticket: button?.id } : null;
+    const hasCourseAccess = this.store.user(user)!.bot_access === 1;
+    const step = hasCourseAccess && parsed ? catalog.steps.find(s => s.id === parsed.stepId) : undefined;
+    const matches = step && screen ? compareBotMaterial(step, screen.text) : null;
+    const renderingComparison = matches !== null && parsed && screen ? { stepId: parsed.stepId, messageId: screen.id, matches } : undefined;
+    const current = hasCourseAccess && parsed && !done.has(parsed.stepId) ? { lessonId: parsed.lesson.id, stepId: parsed.stepId, title: catalog.steps.find(s => s.id === parsed.stepId)!.title, stream: parsed.stream, ticket: button?.id } : null;
     const historyComplete = !!this.store.db.prepare('SELECT exhausted FROM learning_history WHERE user_id=? AND telegram_id=?').get(user, telegramId)?.exhausted;
-    return { completedStepIds, completedLessonIds, current, historyComplete, syncedAt: Date.now(),
+    return { hasCourseAccess, renderingComparison, completedStepIds, completedLessonIds, current, historyComplete, syncedAt: Date.now(),
       modules: catalog.modules.map(m => { const active = moduleLessons(catalog, m).active; return { id: m.id, completed: active.filter(l => lessons.has(l.id)).length, total: active.length }; }),
       notice: !historyComplete ? 'Восстанавливаем завершённые шаги из истории бота…' : 'Галочки подтверждены доступной историей бота. Удалённые сообщения и отличия программы могут оставить часть прогресса неизвестной.' };
   }
@@ -317,7 +338,7 @@ export class TelegramBridge {
     catch (error) { if (!isRevokedTelegramSession(error)) throw error; }
     if (client) await client.destroy().catch(() => {});
     this.clients.delete(user); this.touched.delete(user);
-    this.store.db.prepare('UPDATE users SET telegram=NULL,telegram_id=NULL,telegram_name=NULL WHERE id=?').run(user);
+    this.store.db.prepare('UPDATE users SET telegram=NULL,telegram_id=NULL,telegram_name=NULL,bot_access=0,bot_access_date=0,bot_access_message=0 WHERE id=?').run(user);
     for (const [id, ticket] of this.tickets) if (ticket.user === user) this.tickets.delete(id);
     this.store.audit(user, 'telegram.revoked');
   }

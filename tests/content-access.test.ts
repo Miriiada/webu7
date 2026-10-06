@@ -13,7 +13,7 @@ test('Public titles contain no material bodies or code', () => {
 test('Only confirmed lessons and current module prefix are opened; future and other modules stay closed', () => {
   const c = readCatalog(), module = c.modules[1], lessons = moduleLessons(c, module).active;
   const current = lessons[2];
-  const progress: LearningProgress = { completedLessonIds: [], completedStepIds: [], modules: [], historyComplete: true, syncedAt: Date.now(), notice: '', current: { lessonId: current.id, stepId: current.stepIds[0], title: '', stream: '' } };
+  const progress: LearningProgress = { hasCourseAccess: true, completedLessonIds: [], completedStepIds: [], modules: [], historyComplete: true, syncedAt: Date.now(), notice: '', current: { lessonId: current.id, stepId: current.stepIds[0], title: '', stream: '' } };
   const result = accessibleCatalog(c, progress);
   const allowed = new Set(lessons.slice(0, 3).flatMap(l => l.stepIds));
   for (const step of result.steps) {

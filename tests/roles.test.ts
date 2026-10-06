@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import { createApp } from '../server/app.js';
-import { setUserRole } from '../server/roles.js';
+import { setUserRole, effectiveRole } from '../server/roles.js';
 import type { Config } from '../server/config.js';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -21,6 +21,7 @@ test('Legacy users retain accounts and encrypted Telegram data; migration grants
     legacy.close();
     const first = new Store(file);
     assert.equal(first.user('legacy')!.role, 'student');
+    assert.equal(effectiveRole(first.user('legacy')!), 'user');
     assert.equal(first.user('legacy')!.telegram, 'encrypted-session');
     assert.equal(first.user('legacy')!.password, 'password-hash');
     setUserRole(first, 'legacy', 'admin'); first.close();
@@ -40,11 +41,11 @@ test('Roles: no self-promotion, protected admin endpoints, full catalog, immedia
     assert.equal((await request(app).post('/api/auth/register').set(headers).send({ ...body, role: 'admin' })).status, 400);
     const a = await request(app).post('/api/auth/register').set(headers).send(body);
     const cookieA = a.headers['set-cookie'][0].split(';')[0];
-    assert.equal(a.body.user.role, 'student');
+    assert.equal(a.body.user.role, 'user');
     assert.equal((await request(app).get('/api/admin/users').set(headers).set('Cookie', cookieA)).status, 403);
     setUserRole(store, a.body.user.id, 'admin'); // Bootstrap requires access to the server, never registration.
     const me = await request(app).get('/api/me').set(headers).set('Cookie', cookieA);
-    assert.equal(me.body.user.role, 'admin');
+    assert.equal(me.body.user.role, 'mentor');
     assert(me.body.catalog.steps.every((step: { accessible: boolean }) => step.accessible));
     assert(me.body.catalog.steps.some((step: { content: string }) => step.content));
     const publicCatalog = await request(app).get('/api/public').set(headers).set('Cookie', cookieA);

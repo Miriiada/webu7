@@ -70,6 +70,9 @@ export function completionEvidence(messages: BotMessage[], catalog: Catalog) {
 
 export interface LearningProgress {
   catalog?: Catalog;
+  user?: { id: string; name: string; email: string; role: 'user' | 'student' | 'mentor'; telegramConnected: boolean; telegramName: string | null; created: number };
+  hasCourseAccess?: boolean;
+  renderingComparison?: { stepId: string; messageId: number; matches: boolean };
   completedStepIds: string[];
   completedLessonIds: string[];
   modules: { id: string; completed: number; total: number }[];
