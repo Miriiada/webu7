@@ -19,10 +19,13 @@ export class Store {
     if (!this.db.prepare('PRAGMA table_info(users)').all().some(column => column.name === 'role')) {
       this.db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student' CHECK(role IN ('student','admin'))");
     }
+    const historyColumns = this.db.prepare('PRAGMA table_info(learning_history)').all();
+    if (!historyColumns.some(column => column.name === 'revision')) this.db.exec("ALTER TABLE learning_history ADD COLUMN revision TEXT NOT NULL DEFAULT ''");
+    if (!historyColumns.some(column => column.name === 'head')) this.db.exec('ALTER TABLE learning_history ADD COLUMN head INTEGER NOT NULL DEFAULT 0');
     // Revisit history when the parser learns new evidence formats; retain confirmed marks.
-    if (this.db.prepare("SELECT value FROM settings WHERE key='learning_parser_version'").get()?.value !== '2') {
-      this.db.prepare('UPDATE learning_history SET cursor=0,exhausted=0').run();
-      this.db.prepare("INSERT OR REPLACE INTO settings(key,value) VALUES('learning_parser_version','2')").run();
+    if (this.db.prepare("SELECT value FROM settings WHERE key='learning_parser_version'").get()?.value !== '3') {
+      this.db.prepare("UPDATE learning_history SET cursor=0,exhausted=0,revision='',head=0").run();
+      this.db.prepare("INSERT OR REPLACE INTO settings(key,value) VALUES('learning_parser_version','3')").run();
     }
     if (file !== ':memory:' && process.platform !== 'win32') chmodSync(file, 0o600);
   }

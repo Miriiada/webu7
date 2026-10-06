@@ -13,6 +13,35 @@ const c = historicalCatalog();
 const lesson = c.lessons.find(l => l.id === '01a09652-bf63-4ac1-b96d-7749abc1e543')!;
 function body(index = 4) { return `📖 Поток: Алгоритмика - 7\n📁 Проект: TDD и функции сравнения строк (первая реализация)\n📚 Урок: «${lesson.title}»\n🔢 p3-l2\n📊 [████████░░] ${index}/5\n📝 Шаг ${index + 1} из 5: ${c.steps.find(s => s.id === lesson.stepIds[index])!.title}`; }
 const msg = (text: string, id = 1): BotMessage => ({ text, id, date: 100, buttons: [] });
+
+test('History is revisited after catalog changes or a gap; unchanged history is not scanned again and confirmed marks are retained', async () => {
+  for (const reason of ['catalog', 'gap', 'unchanged'] as const) {
+    const store = new Store(':memory:'), key = randomBytes(32);
+    store.db.prepare('INSERT INTO users(id,email,name,password,telegram,telegram_id,created) VALUES(?,?,?,?,?,?,?)').run('alice', 'alice@example.test', 'Alice', 'unused', seal('fake', key, 'telegram:alice'), 'alice', Date.now());
+    store.db.prepare('INSERT INTO learning_steps VALUES(?,?,?,?)').run('alice', 'alice', 'previous-confirmed-step', 1);
+    store.db.prepare('INSERT INTO learning_history(user_id,telegram_id,cursor,exhausted,revision,head) VALUES(?,?,?,?,?,?)').run('alice', 'alice', 99, 1, reason === 'catalog' ? 'old-revision' : c.revision, reason === 'gap' ? 200 : 350);
+    const config: Config = { key, production: false, origin: 'http://localhost:4173', host: '127.0.0.1', port: 4173, dbPath: ':memory:', apiId: 1, apiHash: 'a'.repeat(32), bot: 'u7_school_bot', botId: '100' };
+    const peer = new Api.User({ id: bigInt(100), bot: true });
+    const message = (text: string, id: number) => new Api.Message({ id, date: 100, message: text, peerId: new Api.PeerUser({ userId: peer.id }) });
+    let batches = 0;
+    const fake = { connect: async () => {}, destroy: async () => {}, getEntity: async () => peer, getMessages: async (_peer: unknown, args: { limit: number; offsetId?: number }) => {
+      if (args.limit === 35) return [message('Главное меню', 350)];
+      batches++; assert.equal(args.offsetId, 0);
+      return [message(`🎉 Урок «${lesson.title}» завершён!`, 2), message(body(4), 1)];
+    } } as unknown as TelegramClient;
+    const bridge = new TelegramBridge(config, store, () => fake, () => c);
+    try {
+      await bridge.learning('alice', 'browser', false); assert.equal(batches, 0);
+      const result = await bridge.learning('alice', 'browser');
+      assert.equal(batches, reason === 'unchanged' ? 0 : 1);
+      assert(result.completedStepIds.includes('previous-confirmed-step'));
+      if (reason !== 'unchanged') assert(result.completedLessonIds.includes(lesson.id));
+      await bridge.learning('alice', 'browser'); assert.equal(batches, reason === 'unchanged' ? 0 : 1);
+      const history = store.db.prepare('SELECT revision,head,exhausted FROM learning_history').get()!;
+      assert.equal(history.revision, c.revision); assert.equal(history.head, 350); assert.equal(history.exhausted, 1);
+    } finally { await bridge.close(); store.close(); }
+  }
+});
 test('Прогресс различает одноимённые уроки по проекту и не приписывает предыдущий модуль', () => {
   const parsed = parseStep(msg(body()), c)!;
   assert.equal(parsed.lesson.id, lesson.id);

@@ -16,6 +16,21 @@ function fixture() {
   const get = (url: string) => client.get(url).set('Host', '127.0.0.1:4173');
   return { ...value, client, post, get, cleanup: async () => { await value.bridge.close(); store.close(); } };
 }
+test('Duplicated Telegram session has an actionable response without exposing RPC details', async () => {
+  const f = fixture();
+  try {
+    const registration = await f.post('/api/auth/register').send({ email: 'duplicate@example.test', name: 'Tester', password: 'Long-password-test-1' });
+    assert.equal(registration.status, 200);
+    f.bridge.messages = async () => { throw Object.assign(new Error('Concurrent usage detected private-session-details'), { errorMessage: 'AUTH_KEY_DUPLICATED' }); };
+    f.bridge.learning = async () => { throw Object.assign(new Error('Authorization invalidated private-session-details'), { errorMessage: 'SESSION_REVOKED' }); };
+    const messages = await f.get('/api/telegram/messages');
+    assert.equal(messages.status, 409); assert.equal(messages.body.code, 'TELEGRAM_DUPLICATED');
+    assert(messages.body.error.includes('личном кабинете')); assert(!JSON.stringify(messages.body).includes('private-session-details'));
+    const learning = await f.get('/api/learning');
+    assert.equal(learning.status, 409); assert.equal(learning.body.code, 'TELEGRAM_REVOKED');
+  } finally { await f.cleanup(); }
+});
+
 test('Закрытые API, проверка Host, Origin и JSON', async () => {
   const f = fixture(); try {
     assert.equal((await f.get('/api/me')).status, 401);

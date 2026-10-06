@@ -40,6 +40,41 @@ test('Вход сообщает способ доставки, скрывает 
     assert.equal(destroyed, 4);
   } finally { await bridge.close(); store.close(); }
 });
+test('Revoked or duplicated session is not retried; disconnect clears only its owner and preserves learning history', async () => {
+  for (const phase of ['connect', 'logout'] as const) {
+    for (const rpc of ['AUTH_KEY_DUPLICATED', 'AUTH_KEY_UNREGISTERED', 'SESSION_REVOKED']) {
+      const key = randomBytes(32), store = new Store(':memory:');
+      for (const id of ['alice', 'bob']) store.db.prepare('INSERT INTO users(id,email,name,password,telegram,telegram_id,created) VALUES(?,?,?,?,?,?,?)').run(id, `${id}@example.test`, id, 'unused', seal('fake-session', key, `telegram:${id}`), id, Date.now());
+      store.db.prepare('INSERT INTO learning_steps VALUES(?,?,?,?)').run('alice', 'alice', 'completed-step', 1);
+      const config: Config = { key, production: false, origin: 'http://localhost:4173', host: '127.0.0.1', port: 4173, dbPath: ':memory:', apiId: 12345, apiHash: 'a'.repeat(32), bot: 'u7_school_bot', botId: '100' };
+      let connections = 0, destroyed = 0;
+      const error = Object.assign(new Error('Authorization invalidated'), { errorMessage: rpc });
+      const fake = { connect: async () => { connections++; if (phase === 'connect') throw error; }, destroy: async () => { destroyed++; }, getEntity: async () => new Api.User({ id: bigInt(100), bot: true }), getMessages: async () => { throw error; }, invoke: async () => { throw error; } } as unknown as TelegramClient;
+      const bridge = new TelegramBridge(config, store, () => fake);
+      try {
+        await assert.rejects(() => bridge.messages('alice', 'browser'), error);
+        assert.equal(connections, 1);
+        assert(store.user('alice')!.telegram);
+        await bridge.disconnect('alice');
+        assert.equal(store.user('alice')!.telegram, null);
+        assert(store.user('bob')!.telegram);
+        assert.equal(store.db.prepare('SELECT COUNT(*) AS n FROM learning_steps WHERE user_id=?').get('alice')!.n, 1);
+        assert.equal(destroyed, phase === 'connect' ? 2 : 1);
+      } finally { await bridge.close(); store.close(); }
+    }
+  }
+});
+
+test('Temporary network failure does not erase a saved Telegram session during disconnect', async () => {
+  const key = randomBytes(32), store = new Store(':memory:');
+  store.db.prepare('INSERT INTO users(id,email,name,password,telegram,created) VALUES(?,?,?,?,?,?)').run('alice', 'alice@example.test', 'Alice', 'unused', seal('fake-session', key, 'telegram:alice'), Date.now());
+  const config: Config = { key, production: false, origin: 'http://localhost:4173', host: '127.0.0.1', port: 4173, dbPath: ':memory:', apiId: 12345, apiHash: 'a'.repeat(32), bot: 'u7_school_bot', botId: '100' };
+  const fake = { connect: async () => { throw new Error('ETIMEDOUT'); }, destroy: async () => {} } as unknown as TelegramClient;
+  const bridge = new TelegramBridge(config, store, () => fake);
+  try { await assert.rejects(() => bridge.disconnect('alice'), /ETIMEDOUT/); assert(store.user('alice')!.telegram); }
+  finally { await bridge.close(); store.close(); }
+});
+
 function fixture() {
   const key = randomBytes(32), store = new Store(':memory:');
   for (const id of ['alice', 'bob']) store.db.prepare('INSERT INTO users(id,email,name,password,telegram,created) VALUES(?,?,?,?,?,?)').run(id, `${id}@example.test`, id, 'unused', seal('fake-session', key, `telegram:${id}`), Date.now());

@@ -180,10 +180,12 @@ export function createApp(config: Config, store = new Store(config.dbPath), brid
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (error instanceof AppError) return res.status(error.status).json({ error: error.message, code: error.code });
     if (error instanceof z.ZodError) return res.status(400).json({ error: 'Проверьте заполненные поля.', code: 'VALIDATION' });
-    const message = error instanceof Error ? error.message : '';
+    const rpc = (error as { errorMessage?: unknown } | null)?.errorMessage;
+    const message = typeof rpc === 'string' && /^[A-Z0-9_]+$/.test(rpc) ? rpc : error instanceof Error ? error.message : '';
     if (/PHONE_CODE_INVALID|PHONE_CODE_EXPIRED|PASSWORD_HASH_INVALID|PHONE_NUMBER_INVALID/.test(message)) return res.status(400).json({ error: 'Неверный или истёкший код, телефон или пароль Telegram.', code: 'TELEGRAM_AUTH' });
     if (/FLOOD|Too many/i.test(message)) return res.status(429).json({ error: 'Telegram временно ограничил запросы. Повторите позже.', code: 'TELEGRAM_LIMIT' });
-    if (/AUTH_KEY_UNREGISTERED|SESSION_REVOKED|SESSION_EXPIRED/.test(message)) return res.status(409).json({ error: 'Telegram-сессия отозвана. Обратитесь к администратору для сброса связи и подключитесь заново.', code: 'TELEGRAM_REVOKED' });
+    if (/AUTH_KEY_DUPLICATED/.test(message)) return res.status(409).json({ error: 'Telegram аннулировал сессию: её копия использовалась в другом экземпляре сайта. В личном кабинете отключите Telegram и подключите заново. Для локального сайта и сервера нужны отдельные подключения.', code: 'TELEGRAM_DUPLICATED' });
+    if (/AUTH_KEY_UNREGISTERED|AUTH_KEY_INVALID|SESSION_REVOKED|SESSION_EXPIRED/.test(message)) return res.status(409).json({ error: 'Telegram-сессия больше не действует. В личном кабинете отключите Telegram и подключите заново.', code: 'TELEGRAM_REVOKED' });
     if (error instanceof SyntaxError) return res.status(400).json({ error: 'Некорректный запрос', code: 'BAD_JSON' });
     // Не логируем сообщения исключений Telegram: они могут содержать приватные данные.
     console.error(JSON.stringify({ event: 'request_failed', type: error instanceof Error ? error.name : 'unknown' }));

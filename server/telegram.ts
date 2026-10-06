@@ -11,6 +11,7 @@ import { Logger, LogLevel } from 'teleproto/extensions/Logger.js';
 import type { Config } from './config.js';
 import { Store } from './db.js';
 import { AppError, digest, seal, unseal, token, safeUrl } from './security.js';
+import { isRevokedTelegramSession } from './telegram-errors.js';
 
 export interface BotButton { id?: string; text: string; url?: string; disabled?: boolean; }
 export interface BotMessage { id: number; text: string; date: number; buttons: BotButton[][]; }
@@ -161,7 +162,11 @@ export class TelegramBridge {
     const row = this.store.user(user);
     if (!row?.telegram) throw new AppError(409, 'NOT_CONNECTED', 'Сначала подключите Telegram в личном кабинете.');
     let client = this.clients.get(user);
-    if (!client) { client = this.make(unseal(row.telegram, this.config.key, `telegram:${user}`)); await client.connect(); this.clients.set(user, client); }
+    if (!client) {
+      client = this.make(unseal(row.telegram, this.config.key, `telegram:${user}`));
+      try { await client.connect(); } catch (error) { await client.destroy().catch(() => {}); throw error; }
+      this.clients.set(user, client);
+    }
     return client;
   }
   private async peer(client: TelegramClient) {
@@ -203,7 +208,7 @@ export class TelegramBridge {
     catch (error) {
       // A cached MTProto client can lose its socket after a local network sleep.
       // Reading the chat is idempotent, so reconnect once instead of showing a false disconnect.
-      if (error instanceof AppError) throw error;
+      if (error instanceof AppError || isRevokedTelegramSession(error)) throw error;
       await this.replaceClient(user);
       return this.readMessages(user, session);
     }
@@ -213,7 +218,14 @@ export class TelegramBridge {
     const messages = await this.messages(user, session);
     const telegramId = row.telegram_id!;
     this.store.db.prepare('INSERT OR IGNORE INTO learning_history(user_id,telegram_id) VALUES(?,?)').run(user, telegramId);
-    const history = this.store.db.prepare('SELECT cursor,exhausted FROM learning_history WHERE user_id=? AND telegram_id=?').get(user, telegramId)!;
+    const history = this.store.db.prepare('SELECT cursor,exhausted,revision,head FROM learning_history WHERE user_id=? AND telegram_id=?').get(user, telegramId)!;
+    // Reparse old messages after curriculum changes or a gap while the website was offline.
+    // A position in the course alone is never evidence of completion.
+    const oldest = messages.length ? Math.min(...messages.map(m => m.id)) : 0;
+    if (backfill && (history.revision !== catalog.revision || (Number(history.head) > 0 && oldest > Number(history.head)))) {
+      this.store.db.prepare('UPDATE learning_history SET cursor=0,exhausted=0,revision=? WHERE user_id=? AND telegram_id=?').run(catalog.revision, user, telegramId);
+      history.cursor = 0; history.exhausted = 0;
+    }
     const evidenceMessages = [...messages];
     if (backfill && !history.exhausted) {
       const client = await this.client(user), peer = await this.peer(client);
@@ -224,6 +236,7 @@ export class TelegramBridge {
     }
     const save = this.store.db.prepare('INSERT OR IGNORE INTO learning_steps VALUES(?,?,?,?)');
     for (const [step, evidence] of completionEvidence(evidenceMessages, catalog)) save.run(user, telegramId, step, evidence);
+    if (backfill && messages.length) this.store.db.prepare('UPDATE learning_history SET head=? WHERE user_id=? AND telegram_id=?').run(Math.max(...messages.map(m => m.id)), user, telegramId);
     const completedStepIds = this.store.db.prepare('SELECT step_id FROM learning_steps WHERE user_id=? AND telegram_id=?').all(user, telegramId).map(r => String(r.step_id));
     const done = new Set(completedStepIds);
     const completedLessonIds = catalog.lessons.filter(l => l.stepIds.length && l.stepIds.every(id => done.has(id))).map(l => l.id);
@@ -298,11 +311,12 @@ export class TelegramBridge {
     for (const [id, ticket] of this.tickets) if (ticket.user === user && ticket.session === session) this.tickets.delete(id);
   }
   async disconnect(user: string) {
-    const client = await this.client(user);
+    let client = this.clients.get(user);
     // Сначала отзываем авторизацию в Telegram. При сбое оставляем возможность повторить отзыв.
-    try { await client.invoke(new Api.auth.LogOut()); }
-    catch (error) { if (!(error instanceof Error) || !/AUTH_KEY_UNREGISTERED|SESSION_REVOKED|SESSION_EXPIRED/.test(error.message)) throw error; }
-    await client.destroy(); this.clients.delete(user);
+    try { client ??= await this.client(user); await client.invoke(new Api.auth.LogOut()); }
+    catch (error) { if (!isRevokedTelegramSession(error)) throw error; }
+    if (client) await client.destroy().catch(() => {});
+    this.clients.delete(user); this.touched.delete(user);
     this.store.db.prepare('UPDATE users SET telegram=NULL,telegram_id=NULL,telegram_name=NULL WHERE id=?').run(user);
     for (const [id, ticket] of this.tickets) if (ticket.user === user) this.tickets.delete(id);
     this.store.audit(user, 'telegram.revoked');
