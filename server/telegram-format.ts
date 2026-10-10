@@ -1,7 +1,7 @@
 import { safeConvert, mdCodeBlock } from './mentor/markdown.js';
 import { validateMarkdownV2 } from './mentor/markdown-validator.js';
 
-export interface TextEntity { type: string; offset: number; length: number; url?: string; }
+export interface TextEntity { type: string; offset: number; length: number; url?: string; language?: string; }
 export interface TelegramText { text: string; entities: TextEntity[]; }
 const renderingCache = new Map<string, TelegramText>();
 // Browser adapter only. Markdown conversion belongs to the mentor's unchanged code.
@@ -14,13 +14,14 @@ export function decodeMarkdownV2(source: string): TelegramText {
     if (source.startsWith('```', i) || source[i] === '`') {
       const marker = source.startsWith('```', i) ? '```' : '`', type = marker.length === 3 ? 'pre' : 'code';
       i += marker.length;
-      if (type === 'pre') { const line = source.indexOf('\n', i); if (line >= i) i = line + 1; }
+      let language: string | undefined;
+      if (type === 'pre') { const line = source.indexOf('\n', i); if (line >= i) { language = source.slice(i, line).trim() || undefined; i = line + 1; } }
       const offset = text.length;
       while (i < source.length && !source.startsWith(marker, i)) {
         if (source[i] === '\\' && escaped()) continue;
         text += source[i++];
       }
-      entities.push({ type, offset, length: text.length - offset }); i += marker.length; continue;
+      entities.push({ type, offset, length: text.length - offset, ...(language ? { language } : {}) }); i += marker.length; continue;
     }
     if (source[i] === '[') {
       // Link labels can contain formatting; parse them through the same adapter.

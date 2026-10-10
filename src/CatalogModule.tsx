@@ -1,10 +1,11 @@
 import { CheckCircle2, ChevronDown, ChevronRight, Clock3, FileText } from 'lucide-react';
-import { moduleLessons, lessonMatchesSearch } from '../server/catalog-order';
-import type { Catalog } from './api';
+import { moduleLessons, lessonMatchesSearch } from '../server/catalog-order.js';
+import type { Catalog } from '../server/content.js';
 
-export function CatalogModule({ catalog, module, index, search, expanded, toggle, count, doneSteps, doneLessons, currentLesson, viewedLesson, hasProgress, openLesson }: {
+export function CatalogModule({ catalog, module, index, search, expanded, toggle, count, doneSteps, doneLessons, currentLesson, viewedLesson, hasProgress, openLesson, expandedProjects, toggleProject }: {
   catalog: Catalog; module: Catalog['modules'][number]; index: number; search: string; expanded: boolean; toggle: () => void; count: string;
   doneSteps: Set<string>; doneLessons: Set<string>; currentLesson?: string; viewedLesson?: string; hasProgress: boolean; openLesson: (id: string) => void;
+  expandedProjects: Set<string>; toggleProject: (key: string) => void;
 }) {
   const groups = moduleLessons(catalog, module);
   const matches = (lesson: Catalog['lessons'][number]) => lessonMatchesSearch(module, lesson, search);
@@ -26,8 +27,8 @@ export function CatalogModule({ catalog, module, index, search, expanded, toggle
     </button>
     {expanded && <div id={'module-' + module.id}>
       {groups.projects.length ? projects.map(project => <section className="catalog-project" key={project.id} aria-labelledby={'project-' + module.id + '-' + project.id}>
-        <header className="catalog-project-heading"><div><span className="eyebrow">ПРОЕКТ {String(groups.projects.findIndex(p => p.id === project.id) + 1).padStart(2, '0')}</span><h3 id={'project-' + module.id + '-' + project.id}>{project.title}</h3></div><span>{hasProgress ? project.lessons.filter(l => doneLessons.has(l.id)).length + '/' + project.lessons.length + ' уроков выполнено' : project.lessons.length + ' уроков'}</span></header>
-        {rows(project.visible, groups.active)}
+        <button className="catalog-project-heading project-toggle" aria-expanded={!!search || expandedProjects.has(`${module.id}:${project.id}`)} aria-controls={`project-lessons-${module.id}-${project.id}`} onClick={() => toggleProject(`${module.id}:${project.id}`)}><span className="project-caption"><span className="eyebrow">ПРОЕКТ {String(groups.projects.findIndex(p => p.id === project.id) + 1).padStart(2, '0')}</span><strong id={'project-' + module.id + '-' + project.id}>{project.title}</strong></span><span>{hasProgress ? project.lessons.filter(l => doneLessons.has(l.id)).length + '/' + project.lessons.length + ' уроков выполнено' : project.lessons.length + ' уроков'}</span><ChevronDown size={18} className={search || expandedProjects.has(`${module.id}:${project.id}`) ? 'module-chevron expanded' : 'module-chevron'}/></button>
+        {(!!search || expandedProjects.has(`${module.id}:${project.id}`)) && <div id={`project-lessons-${module.id}-${project.id}`}>{rows(project.visible, groups.active)}</div>}
       </section>) : rows(lessons, groups.active)}
       {archived.length > 0 && <details className="archive-lessons"><summary>Другие версии и дополнительные материалы ({archived.length})</summary><p>Эти уроки не входят в текущую опубликованную программу. Их отметки не переносятся между версиями автоматически.</p>{rows(archived, groups.archived)}</details>}
     </div>}

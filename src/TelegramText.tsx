@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 import type { TelegramText as FormattedText, TextEntity } from '../server/telegram-format.js';
+import { HighlightedCode } from './HighlightedCode.js';
 
 const allowedUrl = (value?: string) => { try { const url = new URL(value || ''); return ['https:', 'http:', 'tg:'].includes(url.protocol) ? url.href : undefined; } catch { return undefined; } };
 export function TelegramText({ value }: { value: FormattedText }) {
@@ -10,8 +11,8 @@ export function TelegramText({ value }: { value: FormattedText }) {
       case 'italic': return <em>{children}</em>;
       case 'underline': return <u>{children}</u>;
       case 'strike': return <s>{children}</s>;
-      case 'code': return <code>{children}</code>;
-      case 'pre': return <pre className="telegram-pre"><code>{children}</code></pre>;
+      case 'code': return <HighlightedCode code={value.text.slice(entity.offset, entity.offset + entity.length)} language={entity.language} inline/>;
+      case 'pre': return <HighlightedCode code={value.text.slice(entity.offset, entity.offset + entity.length)} language={entity.language}/>;
       case 'blockquote': return <blockquote className="telegram-quote">{children}</blockquote>;
       case 'spoiler': return <span className="telegram-spoiler" tabIndex={0} title="Спойлер">{children}</span>;
       case 'url': { const href = allowedUrl(value.text.slice(entity.offset, entity.offset + entity.length)); return href ? <a href={href} target="_blank" rel="noopener noreferrer">{children}</a> : children; }

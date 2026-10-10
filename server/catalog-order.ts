@@ -1,5 +1,11 @@
 import type { Catalog } from './content.js';
 
+export function lessonLocation(catalog: Catalog, lessonId: string) {
+  const module = catalog.modules.find(m => m.id === catalog.lessons.find(l => l.id === lessonId)?.moduleId);
+  const project = module && moduleLessons(catalog, module).projects.find(p => p.lessons.some(l => l.id === lessonId));
+  return { moduleId: module?.id, projectKey: module && project ? `${module.id}:${project.id}` : undefined };
+}
+
 export function lessonMatchesSearch(module: Catalog['modules'][number], lesson: Catalog['lessons'][number], query: string) {
   const projectTitles = module.projects?.filter(p => p.lessonIds.includes(lesson.id)).map(p => p.title) || [];
   return [module.title, ...projectTitles, lesson.title].join(' ').toLowerCase().includes(query.trim().toLowerCase());

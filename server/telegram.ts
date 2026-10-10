@@ -216,7 +216,7 @@ export class TelegramBridge {
         if (button.type instanceof Api.InlineButtonTypeUrl) { const url = safeUrl(button.type.url); if (url) return { text: button.text, url }; }
         return { text: button.text, disabled: true };
       }));
-      const entities: TextEntity[] = (m.entities || []).map(e => ({ type: e.className.replace('MessageEntity', '').toLowerCase(), offset: e.offset, length: e.length, ...('url' in e && typeof e.url === 'string' ? { url: e.url } : {}) }));
+      const entities: TextEntity[] = (m.entities || []).map(e => ({ type: e.className.replace('MessageEntity', '').toLowerCase(), offset: e.offset, length: e.length, ...('url' in e && typeof e.url === 'string' ? { url: e.url } : {}), ...('language' in e && typeof e.language === 'string' ? { language: e.language } : {}) }));
       return { id: m.id, text: m.message, date: m.editDate || m.date, buttons, entities };
     });
   }
